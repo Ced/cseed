@@ -38,71 +38,29 @@
 # configure shellscript to generate the Makefile thanks to this file.
 #
 #############################################################################
-
-AUTOMAKE_OPTIONS = subdir-objects
-
-if BUNDLED_ISL
-    MAYBE_ISL = usr/src/isl
-    ISL_LA = $(top_builddir)/usr/src/isl/libisl.la
-endif
-if BUNDLED_OSL
-    MAYBE_OSL = usr/src/osl
-    OSL_LA = $(top_builddir)/usr/src/osl/libosl.la
-endif
-if BUNDLED_CLAN
-    MAYBE_CLAN = usr/src/clan
-    CLAN_LA = $(top_builddir)/usr/src/clan/libclan.la
-endif
-if BUNDLED_CLOOG
-    MAYBE_CLOOG = usr/src/cloog
-    CLOOG_LA = $(top_builddir)/usr/src/cloog/libcloog-isl.la
-endif
-
-SUBDIRS         = $(MAYBE_ISL) $(MAYBE_OSL) $(MAYBE_CLAN) $(MAYBE_CLOOG) doc
-DIST_SUBDIRS    = $(MAYBE_ISL) $(MAYBE_OSL) $(MAYBE_CLAN) $(MAYBE_CLOOG) doc
-ACLOCAL_AMFLAGS = -I m4
+SUBDIRS =
 
 #############################################################################
 
-bin_PROGRAMS    = cseed
-lib_LTLIBRARIES = libcseed.la
+MAINTAINERCLEANFILES = Makefile.in
 
-#############################################################################
+EXTRA_DIST = \
+	htmldoc.tar.gz \
+	cseed.pdf
 
-pkginclude_HEADERS = \
-	include/cseed/cseed.h
+TEXINFO_TEX = cseed.texi
+#info_TEXINFOS = cseed.texi
 
-DEFAULT_INCLUDES = -I.
-INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
-AM_CFLAGS = $(CFLAGS_WARN)
+DOCDIR = htmldoc
+DOXYFILE = Doxyfile
+DOXYGEN = @DOXYGEN@
 
-#############################################################################
+# The following requires a fixed version of the Emacs 19.30 etags.
+ETAGS_ARGS = --lang=none \
+ --regex='/^@node[ \t]+\([^,]+\)/\1/' $(srcdir)/doc/cseed.texi
+TAGS_DEPENDENCIES = cseed.texi $(DOXYFILE).in
 
-libcseed_la_LIBADD   = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ $(ISL_LA) $(OSL_LA) $(CLAN_LA) $(CLOOG_LA)
-libcseed_la_CPPFLAGS = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
-libcseed_la_SOURCES  =
-
-#############################################################################
-
-LDADD              = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ libcseed.la
-cseed_CPPFLAGS     = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
-cseed_DEPENDENCIES = libcseed.la
-cseed_SOURCES      = source/cseed.c
-
-#############################################################################
-
-MAINTAINERCLEANFILES = \
-	Makefile.in \
-	aclocal.m4 \
-	configure \
-	$(AUX_DIST)
-
-#############################################################################
-
-dist-hook:
-	(cd $(distdir) && mkdir -p $(ac_aux_dir))
-	for file in $(AUX_DIST); do \
-	  cp $$file $(distdir)/$$file; \
-	done
-
-#############################################################################
+htmldoc.tar.gz:
+	mkdir -p $(top_srcdir)/doc/htmldoc
+	$(DOXYGEN) $(DOXYFILE)
+	tar czf htmldoc.tar.gz htmldoc

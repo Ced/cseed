@@ -36,19 +36,49 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <osl/scop.h>
-#include <osl/statement.h>
-#include <osl/relation.h>
+#include <osl/osl.h>
+#include <clan/clan.h>
+#define CLOOG_INT_LONG
+#include <cloog/cloog.h>
 #include <cseed/macros.h>
 
-int main(int argc, char * argv[]) {
+osl_scop_p cseed_scop_read_from_c(FILE* input, char* input_name) {
+  clan_options_p clanoptions;
   osl_scop_p scop;
-  osl_statement_p statement;
-  osl_relation_p scattering;
-  FILE * input;
-  int nb_statements;
 
-  if ((argc > 2) || ((argc == 2) && !strcmp(argv[1], "-h")))  {
+  clanoptions = clan_options_malloc();
+  clanoptions->precision = OSL_PRECISION_MP;
+  CLAN_strdup(clanoptions->name, input_name);
+  scop = clan_scop_extract(input, clanoptions);
+  clan_options_free(clanoptions);
+  return scop;
+}
+
+void cseed_scop_print_to_c(FILE* output, osl_scop_p scop) {
+  CloogState* state;
+  CloogOptions* options;
+  CloogInput* input;
+  struct clast_stmt* clast;
+
+  state = cloog_state_malloc();
+  options = cloog_options_malloc(state);
+  options->openscop = 1;
+  cloog_options_copy_from_osl_scop(scop, options);
+  input = cloog_input_from_osl_scop(options->state, scop);
+  clast = cloog_clast_create_from_input(input, options);
+  clast_pprint(output, clast, 0, options);
+  
+  cloog_clast_free(clast);
+  options->scop = NULL; // don't free the scop
+  cloog_options_free(options);
+  cloog_state_free(state); // the input is freed inside
+}
+
+int main(int argc, char* argv[]) {
+  osl_scop_p scop;
+  FILE* input;
+
+  if ((argc < 2) || (argc > 2)) {
     CSEED_info("usage: cseed [file]");
     exit(0);
   }
@@ -61,24 +91,11 @@ int main(int argc, char * argv[]) {
   if (input == NULL)
     CSEED_error("cannot open input file");
 
-  scop = osl_scop_read(input);
-  statement = scop->statement;
-  nb_statements = osl_statement_number(statement);
-  srand(time(0));
-
-  while (statement != NULL) {
-    scattering = statement->scattering;
-    if (scattering != NULL)
-      osl_int_set_si(scattering->precision,
-	             scattering->m[0], scattering->nb_columns - 1,
-		     rand() % nb_statements);
-    else
-      CSEED_warning("no scattering");
-
-    statement = statement->next;
-  }
-  
+  scop = cseed_scop_read_from_c(input, argv[1]);
   osl_scop_print(stdout, scop);
+  cseed_scop_print_to_c(stdout, scop);
   osl_scop_free(scop);
+  
   fclose(input);
+  return 0;
 }

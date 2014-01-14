@@ -1,0 +1,12 @@
+[submodule "usr/src/osl"]
+	path = usr/src/osl
+	url = git@github.com:periscop/openscop.git
+[submodule "usr/src/clan"]
+	path = usr/src/clan
+	url = git@github.com:periscop/clan.git
+[submodule "usr/src/isl"]
+	path = usr/src/isl
+	url = git://repo.or.cz/isl.git
+[submodule "usr/src/cloog"]
+	path = usr/src/cloog
+	url = git@github.com:periscop/cloog.git

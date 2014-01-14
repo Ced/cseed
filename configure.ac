@@ -88,37 +88,143 @@ AC_CHECK_FUNCS(strtol)
 
 
 dnl /**************************************************************************
-dnl  *                             Option setting                             *
+dnl  *                            Option setting                              *
 dnl  **************************************************************************/
 
 dnl /**************************************************************************
-dnl  *                   Where is the OpenScop Library?                       *
+dnl  *                            Where is GMP?                               *
 dnl  **************************************************************************/
 
-AX_SUBMODULE(osl,system|build|bundled,system)
+AX_SUBMODULE(gmp,system|build,system)
+
+need_get_memory_functions=false
+case "$with_gmp" in
+build)
+    CPPFLAGS="-I$with_gmp_builddir $CPPFLAGS"
+    LDFLAGS="-L$with_gmp_builddir/$lt_cv_objdir $LDFLAGS"
+    ;;
+system)
+    if test "x$with_gmp_prefix" != "x"; then
+	CPPFLAGS="-I$with_gmp_prefix/include $CPPFLAGS"
+    fi
+    
+    if test "$with_gmp_exec_prefix" != "yes" ; then
+	LDFLAGS="-L$with_gmp_exec_prefix/lib $LDFLAGS"
+    fi
+    ;;
+esac
+case "$with_gmp" in
+build|system)
+    AC_CHECK_HEADER(gmp.h,
+                    [],
+                    [AC_MSG_ERROR(Can't find gmp headers.)])
+    AC_CHECK_LIB(gmp,
+                 __gmpz_init,
+                 [LIBS="$LIBS -lgmp"],
+                 [AC_MSG_ERROR(Can't find gmp library.)])
+    AC_CHECK_DECLS(mp_get_memory_functions,[],[
+	    need_get_memory_functions=true
+    ],[#include <gmp.h>])
+    ;;
+esac
+AM_CONDITIONAL(NEED_GET_MEMORY_FUNCTIONS,
+		test x$need_get_memory_functions = xtrue)
+
+dnl /**************************************************************************
+dnl  *                       Where is the isl Library?                        *
+dnl  **************************************************************************/
+
+AX_SUBMODULE(isl,system|build|bundled,bundled)
+
+AC_SUBST(ISL_CPPFLAGS)
+AC_SUBST(ISL_LDFLAGS)
+AC_SUBST(ISL_LIBS)
+case "$with_isl" in
+bundled)
+	ISL_CPPFLAGS="-I$srcdir/usr/src/isl/include -Iusr/src/isl/include"
+	ISL_LIBS="$srcdir/usr/src/isl/libisl.la"
+	;;
+build)
+	ISL_CPPFLAGS="-I$isl_srcdir/include -I$with_isl_builddir/include"
+	ISL_LIBS="$with_isl_builddir/libisl.la"
+	;;
+system)
+	ISL_CPPFLAGS="-I$with_isl_prefix/include"
+	ISL_LIBS="$with_isl_prefix/lib/libisl.la -lisl"
+esac
+AM_CONDITIONAL(BUNDLED_ISL, test $with_isl = bundled)
+
+dnl /**************************************************************************
+dnl  *                      Where is the OpenScop Library?                    *
+dnl  **************************************************************************/
+
+AX_SUBMODULE(osl,system|build|bundled,bundled)
 
 AC_SUBST(OSL_CPPFLAGS)
 AC_SUBST(OSL_LDFLAGS)
 AC_SUBST(OSL_LIBS)
 case "$with_osl" in
 bundled)
-	OSL_CPPFLAGS="-I$srcdir/osl/include -Iosl/include"
-	OSL_LIBS="$srcdir/osl/source/libosl.la"
+	OSL_CPPFLAGS="-I$srcdir/usr/src/osl/include -Iusr/src/osl/include"
+	OSL_LIBS="$srcdir/usr/src/osl/libosl.la"
 	;;
 build)
 	OSL_CPPFLAGS="-I$osl_srcdir/include -I$with_osl_builddir/include"
 	OSL_LIBS="$with_osl_builddir/libosl.la"
 	;;
 system)
-	if test "x$with_osl_prefix" != "x"; then
-		OSL_CPPFLAGS="-I$with_osl_prefix/include"
-	fi
-	if test "x$with_osl_exec_prefix" != "x"; then
-		OSL_LDFLAGS="-L$with_osl_exec_prefix/lib"
-	fi
-	OSL_LIBS="$with_osl_exec_prefix/lib/libosl.la -losl"
+	OSL_CPPFLAGS="-I$with_osl_prefix/include"
+	OSL_LIBS="$with_osl_prefix/lib/libosl.la -losl"
 esac
 AM_CONDITIONAL(BUNDLED_OSL, test $with_osl = bundled)
+
+dnl /**************************************************************************
+dnl  *                             Where is Clan ?                            *
+dnl  **************************************************************************/
+
+AX_SUBMODULE(clan,system|build|bundled,bundled)
+
+AC_SUBST(CLAN_CPPFLAGS)
+AC_SUBST(CLAN_LDFLAGS)
+AC_SUBST(CLAN_LIBS)
+case "$with_clan" in
+bundled)
+	CLAN_CPPFLAGS="-I$srcdir/usr/src/clan/include -Iusr/src/clan/include -DCLAN_LINKED"
+	CLAN_LIBS="$srcdir/usr/src/clan/libclan.la"
+	;;
+build)
+	CLAN_CPPFLAGS="-I$clan_srcdir/include -I$with_clan_builddir/include -DCLAN_LINKED"
+	CLAN_LIBS="$with_clan_builddir/libclan.la"
+	;;
+system)
+	CLAN_CPPFLAGS="-I$with_clan_prefix/include -DCLAN_LINKED"
+	CLAN_LIBS="$with_clan_prefix/lib/libclan.la -lclan"
+esac
+AM_CONDITIONAL(BUNDLED_CLAN, test $with_clan = bundled)
+
+dnl /**************************************************************************
+dnl  *                             Where is Cloog ?                           *
+dnl  **************************************************************************/
+
+AX_SUBMODULE(cloog,system|build|bundled,bundled)
+
+AC_SUBST(CLOOG_CPPFLAGS)
+AC_SUBST(CLOOG_LDFLAGS)
+AC_SUBST(CLOOG_LIBS)
+case "$with_cloog" in
+bundled)
+	CLOOG_CPPFLAGS="-I$srcdir/usr/src/cloog/include -Iusr/src/cloog/include -DCLOOG_LINKED"
+  	CLOOG_LIBS="$srcdir/usr/src/cloog/libcloog-isl.la"
+	;;
+build)
+	CLOOG_CPPFLAGS="-I$cloog_srcdir/include -I$with_cloog_builddir/include -DCLOOG_LINKED"
+	CLOOG_LIBS="$with_cloog_builddir/libcloog-isl.la"
+	;;
+system)
+	CLOOG_CPPFLAGS="-I$with_cloog_prefix/include -DCLOOG_LINKED"
+	CLOOG_LIBS="$with_cloog_prefix/lib/libcloog-isl.la -lcloog-isl"
+esac
+AM_CONDITIONAL(BUNDLED_CLOOG, test $with_cloog = bundled)
 
 
 dnl /**************************************************************************
@@ -143,9 +249,21 @@ AC_CONFIG_FILES([
 	],
 	[test -z "$CONFIG_HEADERS" || echo timestamp > source/stamp-h.in])
 
-if test $with_osl = bundled; then
-	AC_CONFIG_SUBDIRS(osl)
+if test $with_isl = bundled; then
+	AC_CONFIG_SUBDIRS(usr/src/isl)
 fi
+if test $with_osl = bundled; then
+	AC_CONFIG_SUBDIRS(usr/src/osl)
+fi
+if test $with_clan = bundled; then
+	AC_CONFIG_SUBDIRS(usr/src/clan)
+fi
+if test $with_cloog = bundled; then
+	AC_CONFIG_SUBDIRS(usr/src/cloog)
+fi
+AC_CONFIG_COMMANDS_POST([
+	ac_configure_args="$ac_configure_args $cseed_configure_args"
+])
 
 AC_OUTPUT
 
