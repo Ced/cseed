@@ -1,10 +1,10 @@
 
    /*--------------------------------------------------------------------+
-    |                              CSeed                                 |
+    |                              Spot                                  |
     |--------------------------------------------------------------------|
-    |                             cseed.h                                |
+    |                             spot.h                                 |
     |--------------------------------------------------------------------|
-    |                    First version: 14/01/2014                       |
+    |                    First version: 28/05/2014                       |
     +--------------------------------------------------------------------+
 
  +--------------------------------------------------------------------------+
@@ -29,14 +29,14 @@
  | Inc., 51 Franklin Street, Fifth Floor,                                   |
  | Boston, MA  02110-1301  USA                                              |
  |                                                                          |
- | CSeed, the Chunky High-Level Compiler Seed                               |
+ | Spot, the Chunky High-Level Compiler Seed                                |
  | Written by Cedric Bastoul, Cedric.Bastoul@unistra.fr                     |
  +--------------------------------------------------------------------------*/
 
 
-#ifndef CSEED_H
-# define CSEED_H
+#ifndef SPOT_H
+# define SPOT_H
 
-# include <cseed/macros.h>
+# include <spot/macros.h>
 
-#endif /* define CSEED_H */
+#endif /* define SPOT_H */

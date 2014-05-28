@@ -1,6 +1,6 @@
 #
 #   /*------------------------------------------------------------------+
-#    |                             CSeed                                |
+#    |                             Spot                                |
 #    |------------------------------------------------------------------|
 #    |                          makefile.am                             |
 #    |------------------------------------------------------------------|
@@ -29,11 +29,11 @@
 # | Foundation, Inc., 51 Franklin Street, Fifth Floor,                     |
 # | Boston, MA  02110-1301  USA                                            |
 # |                                                                        |
-# | CSeed, the Chunky High-Level Compiler Seed                             |
+# | Spot, the Chunky High-Level Compiler Seed                             |
 # | Written by Cedric Bastoul, Cedric.Bastoul@unistra.fr                   |
 # +------------------------------------------------------------------------*/
 #
-# Makefile.am (or makefile if generated) of CSeed.
+# Makefile.am (or makefile if generated) of Spot.
 # Makefile.am is not a makefile, you must run the 'autogen.sh' THEN the
 # configure shellscript to generate the Makefile thanks to this file.
 #
@@ -64,13 +64,13 @@ ACLOCAL_AMFLAGS = -I m4
 
 #############################################################################
 
-bin_PROGRAMS    = cseed
-lib_LTLIBRARIES = libcseed.la
+bin_PROGRAMS    = spot
+lib_LTLIBRARIES = libspot.la
 
 #############################################################################
 
 pkginclude_HEADERS = \
-	include/cseed/cseed.h
+	include/spot/spot.h
 
 DEFAULT_INCLUDES = -I.
 INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
@@ -78,16 +78,16 @@ AM_CFLAGS = $(CFLAGS_WARN)
 
 #############################################################################
 
-libcseed_la_LIBADD   = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ $(ISL_LA) $(OSL_LA) $(CLAN_LA) $(CLOOG_LA)
-libcseed_la_CPPFLAGS = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
-libcseed_la_SOURCES  =
+libspot_la_LIBADD   = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ $(ISL_LA) $(OSL_LA) $(CLAN_LA) $(CLOOG_LA)
+libspot_la_CPPFLAGS = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
+libspot_la_SOURCES  =
 
 #############################################################################
 
-LDADD              = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ libcseed.la
-cseed_CPPFLAGS     = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
-cseed_DEPENDENCIES = libcseed.la
-cseed_SOURCES      = source/cseed.c
+LDADD              = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ libspot.la
+spot_CPPFLAGS     = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
+spot_DEPENDENCIES = libspot.la
+spot_SOURCES      = source/spot.c
 
 #############################################################################
 

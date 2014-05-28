@@ -1,6 +1,6 @@
 
    /*--------------------------------------------------------------------+
-    |                              CSeed                                 |
+    |                              Spot                                  |
     |--------------------------------------------------------------------|
     |                             macros.h                               |
     |--------------------------------------------------------------------|
@@ -29,7 +29,7 @@
  | Inc., 51 Franklin Street, Fifth Floor,                                   |
  | Boston, MA  02110-1301  USA                                              |
  |                                                                          |
- | CSeed, the Chunky High-Level Compiler Seed                               |
+ | Spot, the Chunky High-Level Compiler Seed                               |
  | Written by Cedric Bastoul, Cedric.Bastoul@unistra.fr                     |
  +--------------------------------------------------------------------------*/
 
@@ -37,73 +37,73 @@
  | THIS FILE HAS BEEN AUTOMATICALLY GENERATED FROM macros.h.in BY configure |
  +--------------------------------------------------------------------------*/
 
-#ifndef CSEED_MACROS_H
-# define CSEED_MACROS_H
+#ifndef SPOT_MACROS_H
+# define SPOT_MACROS_H
 
-# define CSEED_VERSION                  "@PACKAGE_VERSION@"
+# define SPOT_VERSION                  "@PACKAGE_VERSION@"
 
-# define CSEED_DEBUG			0
-# define CSEED_TRUE			1
-# define CSEED_FALSE			0
+# define SPOT_DEBUG			0
+# define SPOT_TRUE			1
+# define SPOT_FALSE			0
 
 /*--------------------------------------------------------------------------+
  |                              UTILITY MACROS                              |
  +--------------------------------------------------------------------------*/
 
-# define CSEED_info(msg)                                                    \
+# define SPOT_info(msg)                                                    \
          do {                                                               \
-           fprintf(stderr,"[CSeed] Info: "msg".\n");                        \
+           fprintf(stderr,"[Spot] Info: "msg".\n");                        \
          } while (0)
 
-# define CSEED_debug(msg)                                                   \
+# define SPOT_debug(msg)                                                   \
          do {                                                               \
-           if (CSEED_DEBUG)                                                 \
-             fprintf(stderr,"[CSeed] Debug: "msg" (%s).\n", __func__);      \
+           if (SPOT_DEBUG)                                                 \
+             fprintf(stderr,"[Spot] Debug: "msg" (%s).\n", __func__);      \
          } while (0)
 
-# define CSEED_debug_call(function_call)                                    \
+# define SPOT_debug_call(function_call)                                    \
          do {                                                               \
-           if (CSEED_DEBUG)                                                 \
+           if (SPOT_DEBUG)                                                 \
              function_call;                                                 \
          } while (0)
 
-# define CSEED_warning(msg)                                                 \
+# define SPOT_warning(msg)                                                 \
          do {                                                               \
-           fprintf(stderr,"[CSeed] Warning: "msg" (%s).\n", __func__);      \
+           fprintf(stderr,"[Spot] Warning: "msg" (%s).\n", __func__);      \
          } while (0)
 
-# define CSEED_error(msg)                                                   \
+# define SPOT_error(msg)                                                   \
          do {                                                               \
-           fprintf(stderr,"[CSeed] Error: "msg" (%s).\n", __func__);        \
+           fprintf(stderr,"[Spot] Error: "msg" (%s).\n", __func__);        \
            exit(1);                                                         \
          } while (0)
 
-# define CSEED_malloc(ptr, type, size)                                      \
+# define SPOT_malloc(ptr, type, size)                                      \
          do {                                                               \
            if (((ptr) = (type)malloc(size)) == NULL)                        \
-             CSEED_error("memory overflow");                                \
+             SPOT_error("memory overflow");                                \
          } while (0)
 
-# define CSEED_realloc(ptr, type, size)                                     \
+# define SPOT_realloc(ptr, type, size)                                     \
          do {                                                               \
            if (((ptr) = (type)realloc(ptr, size)) == NULL)                  \
-             CSEED_error("memory overflow");                                \
+             SPOT_error("memory overflow");                                \
          } while (0)
 
-# define CSEED_strdup(destination, source)                                  \
+# define SPOT_strdup(destination, source)                                  \
          do {                                                               \
            if (source != NULL) {                                            \
              if (((destination) = strdup(source)) == NULL)                  \
-               CSEED_error("memory overflow");                              \
+               SPOT_error("memory overflow");                              \
            }                                                                \
            else {                                                           \
              destination = NULL;                                            \
-             CSEED_debug("strdup of a NULL string");                        \
+             SPOT_debug("strdup of a NULL string");                        \
            }                                                                \
          } while (0)
 
-# define CSEED_max(x,y) ((x) > (y)? (x) : (y))
+# define SPOT_max(x,y) ((x) > (y)? (x) : (y))
 
-# define CSEED_min(x,y) ((x) < (y)? (x) : (y))
+# define SPOT_min(x,y) ((x) < (y)? (x) : (y))
 
-#endif /* define CSEED_MACROS_H */
+#endif /* define SPOT_MACROS_H */

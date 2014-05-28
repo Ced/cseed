@@ -1,8 +1,8 @@
 
    /*--------------------------------------------------------------------+
-    |                              CSeed                                 |
+    |                              Spot                                 |
     |--------------------------------------------------------------------|
-    |                             cseed.c                                |
+    |                             spot.c                                |
     |--------------------------------------------------------------------|
     |                    First version: 14/01/2014                       |
     +--------------------------------------------------------------------+
@@ -29,7 +29,7 @@
  | Inc., 51 Franklin Street, Fifth Floor,                                   |
  | Boston, MA  02110-1301  USA                                              |
  |                                                                          |
- | CSeed, the Chunky High-Level Compiler Seed                               |
+ | Spot, the Chunky High-Level Compiler Seed                               |
  | Written by Cedric Bastoul, Cedric.Bastoul@unistra.fr                     |
  +--------------------------------------------------------------------------*/
 
@@ -40,9 +40,9 @@
 #include <clan/clan.h>
 #define CLOOG_INT_LONG
 #include <cloog/cloog.h>
-#include <cseed/macros.h>
+#include <spot/macros.h>
 
-osl_scop_p cseed_scop_read_from_c(FILE* input, char* input_name) {
+osl_scop_p spot_scop_read_from_c(FILE* input, char* input_name) {
   clan_options_p clanoptions;
   osl_scop_p scop;
 
@@ -54,7 +54,7 @@ osl_scop_p cseed_scop_read_from_c(FILE* input, char* input_name) {
   return scop;
 }
 
-void cseed_scop_print_to_c(FILE* output, osl_scop_p scop) {
+void spot_scop_print_to_c(FILE* output, osl_scop_p scop) {
   CloogState* state;
   CloogOptions* options;
   CloogInput* input;
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
   FILE* input;
 
   if ((argc < 2) || (argc > 2)) {
-    CSEED_info("usage: cseed [file]");
+    SPOT_info("usage: spot [file]");
     exit(0);
   }
 
@@ -89,11 +89,11 @@ int main(int argc, char* argv[]) {
     input = fopen(argv[1], "r");
 
   if (input == NULL)
-    CSEED_error("cannot open input file");
+    SPOT_error("cannot open input file");
 
-  scop = cseed_scop_read_from_c(input, argv[1]);
+  scop = spot_scop_read_from_c(input, argv[1]);
   osl_scop_print(stdout, scop);
-  cseed_scop_print_to_c(stdout, scop);
+  spot_scop_print_to_c(stdout, scop);
   osl_scop_free(scop);
   
   fclose(input);

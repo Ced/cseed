@@ -1,6 +1,6 @@
 #
 #   /*------------------------------------------------------------------+
-#    |                             CSeed                                |
+#    |                             Spot                                 |
 #    |------------------------------------------------------------------|
 #    |                          makefile.am                             |
 #    |------------------------------------------------------------------|
@@ -8,9 +8,8 @@
 #    +------------------------------------------------------------------+
 #
 # +------------------------------------------------------------------------+
-# |  / __)/ __)( ___)( ___)(  _ \                                          |
-# | ( (__ \__ \ )__)  )__)  )(_) )     Chunky High-Level Compiler Seed     |
-# |  \___)(___/(____)(____)(____/                                          |
+# |      					   		  Space of Interest Polihedral								     |
+# |         						     	loop Transformer        										 |
 # +------------------------------------------------------------------------+
 # | Copyright (C) 2014 University of Strasbourg                            |
 # |                                                                        |
@@ -29,11 +28,11 @@
 # | Foundation, Inc., 51 Franklin Street, Fifth Floor,                     |
 # | Boston, MA  02110-1301  USA                                            |
 # |                                                                        |
-# | CSeed, the Chunky High-Level Compiler Seed                             |
+# | Spot, the Chunky High-Level Compiler Seed                             |
 # | Written by Cedric Bastoul, Cedric.Bastoul@unistra.fr                   |
 # +------------------------------------------------------------------------*/
 #
-# Makefile.am (or makefile if generated) of CSeed.
+# Makefile.am (or makefile if generated) of Spot.
 # Makefile.am is not a makefile, you must run the 'autogen.sh' THEN the
 # configure shellscript to generate the Makefile thanks to this file.
 #
@@ -46,10 +45,10 @@ MAINTAINERCLEANFILES = Makefile.in
 
 EXTRA_DIST = \
 	htmldoc.tar.gz \
-	cseed.pdf
+	spot.pdf
 
-TEXINFO_TEX = cseed.texi
-#info_TEXINFOS = cseed.texi
+TEXINFO_TEX = spot.texi
+#info_TEXINFOS = spot.texi
 
 DOCDIR = htmldoc
 DOXYFILE = Doxyfile
@@ -57,8 +56,8 @@ DOXYGEN = @DOXYGEN@
 
 # The following requires a fixed version of the Emacs 19.30 etags.
 ETAGS_ARGS = --lang=none \
- --regex='/^@node[ \t]+\([^,]+\)/\1/' $(srcdir)/doc/cseed.texi
-TAGS_DEPENDENCIES = cseed.texi $(DOXYFILE).in
+ --regex='/^@node[ \t]+\([^,]+\)/\1/' $(srcdir)/doc/spot.texi
+TAGS_DEPENDENCIES = spot.texi $(DOXYFILE).in
 
 htmldoc.tar.gz:
 	mkdir -p $(top_srcdir)/doc/htmldoc

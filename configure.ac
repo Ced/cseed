@@ -1,6 +1,6 @@
 dnl
 dnl   /*------------------------------------------------------------------+
-dnl    |                             CSeed                                |
+dnl    |                             Spot                                 |
 dnl    |------------------------------------------------------------------|
 dnl    |                          autoconf.ac                             |
 dnl    |------------------------------------------------------------------|
@@ -29,7 +29,7 @@ dnl | License along with this software; if not, write to the Free Software   |
 dnl | Foundation, Inc., 51 Franklin Street, Fifth Floor,                     |
 dnl | Boston, MA  02110-1301  USA                                            |
 dnl |                                                                        |
-dnl | CSeed, the Chunky High-Level Compiler Seed                             |
+dnl | Spot, the Chunky High-Level Compiler Seed                              |
 dnl | Written by Cedric Bastoul, Cedric.Bastoul@unistra.fr                   |
 dnl +------------------------------------------------------------------------*/
 dnl
@@ -41,10 +41,10 @@ m4_define([version_revision], [1])
 
 AC_PREREQ(2.53)
 dnl Fill here the @bug email adress.
-AC_INIT([cseed], [version_major.version_minor.version_revision],
+AC_INIT([spot], [version_major.version_minor.version_revision],
         [cedric.bastoul@unistra.fr])
 dnl A common file, which serve as a test.
-AC_CONFIG_SRCDIR([include/cseed/cseed.h])
+AC_CONFIG_SRCDIR([include/spot/spot.h])
 dnl Put as most as possible configuration files to an auxialiry
 dnl directory.
 AC_CONFIG_AUX_DIR(autoconf)
@@ -245,7 +245,7 @@ AC_CONFIG_FILES([
 	Makefile
 	doc/Makefile
 	doc/Doxyfile
-	include/cseed/macros.h
+	include/spot/macros.h
 	],
 	[test -z "$CONFIG_HEADERS" || echo timestamp > source/stamp-h.in])
 
@@ -262,14 +262,14 @@ if test $with_cloog = bundled; then
 	AC_CONFIG_SUBDIRS(usr/src/cloog)
 fi
 AC_CONFIG_COMMANDS_POST([
-	ac_configure_args="$ac_configure_args $cseed_configure_args"
+	ac_configure_args="$ac_configure_args $spot_configure_args"
 ])
 
 AC_OUTPUT
 
 echo "             /*-----------------------------------------------+"
-echo "              |           CSeed configuration is OK           |"
+echo "              |           Spot configuration is OK           |"
 echo "              +-----------------------------------------------*/"
-echo "It appears that your system is OK to start CSeed compilation. You need"
-echo "now to type \"make\". Lastly type \"make install\" to install CSeed on"
+echo "It appears that your system is OK to start Spot compilation. You need"
+echo "now to type \"make\". Lastly type \"make install\" to install Spot on"
 echo "your system (log as root if necessary)."
