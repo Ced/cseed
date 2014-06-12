@@ -1,8 +1,8 @@
 
    /*--------------------------------------------------------------------+
-    |                              Spot                                 |
+    |                              Spot                                  |
     |--------------------------------------------------------------------|
-    |                             spot.c                                |
+    |                             spot.c                                 |
     |--------------------------------------------------------------------|
     |                    First version: 14/01/2014                       |
     +--------------------------------------------------------------------+
@@ -29,18 +29,21 @@
  | Inc., 51 Franklin Street, Fifth Floor,                                   |
  | Boston, MA  02110-1301  USA                                              |
  |                                                                          |
- | Spot, the Chunky High-Level Compiler Seed                               |
+ | Spot, the Chunky High-Level Compiler Seed                                |
  | Written by Cedric Bastoul, Cedric.Bastoul@unistra.fr                     |
  +--------------------------------------------------------------------------*/
 
 
 #include <stdlib.h>
 #include <string.h>
+#include <osl/extensions/doi.h>
 #include <osl/osl.h>
 #include <clan/clan.h>
 #define CLOOG_INT_LONG
 #include <cloog/cloog.h>
+#include <cloog/isl/cloog.h>
 #include <spot/macros.h>
+#include <isl/options.h>
 
 osl_scop_p spot_scop_read_from_c(FILE* input, char* input_name) {
   clan_options_p clanoptions;
@@ -74,6 +77,265 @@ void spot_scop_print_to_c(FILE* output, osl_scop_p scop) {
   cloog_state_free(state); // the input is freed inside
 }
 
+/*
+char * spot_isl_set_sprint(isl_ctx * ctx, isl_set * set) { 
+	char *isl_set_str, *pr_str;
+	isl_printer *printer=NULL;
+	
+	printer=isl_printer_to_str(ctx);
+	isl_printer_set_output_format(printer , ISL_FORMAT_ISL);
+	isl_printer_print_set(printer, set);
+	pr_str = isl_printer_get_str(printer);
+  isl_set_str = osl_util_strdup(pr_str);
+	isl_printer_flush(printer);
+	
+	return isl_set_str;
+}
+*/
+
+osl_names_p get_scop_names(osl_scop_p scop){
+
+  //generate temp names
+  osl_names_p names = osl_scop_names(scop);
+
+  //if scop has names substitute them for temp names
+  if(scop->context->nb_parameters){
+    osl_strings_free(names->parameters);
+    names->parameters = osl_strings_clone((osl_strings_p)scop->parameters->data);
+  }
+
+  osl_arrays_p arrays = osl_generic_lookup(scop->extension, OSL_URI_ARRAYS);
+  if(arrays){
+    osl_strings_free(names->arrays);
+    names->arrays = osl_arrays_to_strings(arrays);
+  }
+
+  return names;
+}
+
+/** 
+ * Convert a osl_relation_p containing the constraints of a domain
+ * to an isl_set.
+ * One shot only; does not take into account the next ptr.
+ */
+static __isl_give isl_set *osl_relation_to_isl_set(osl_relation_p relation,
+        __isl_take isl_dim *dim)
+{
+    int i, j;
+    int n_eq = 0, n_ineq = 0;
+    isl_ctx *ctx;
+    isl_mat *eq, *ineq;
+    isl_int v;
+    isl_basic_set *bset;
+
+    isl_int_init(v);
+
+    ctx = isl_dim_get_ctx(dim);
+
+    for (i = 0; i < relation->nb_rows; ++i)
+        if (osl_int_zero(relation->precision, relation->m[i][0]))
+            n_eq++;
+        else
+            n_ineq++;
+
+    eq = isl_mat_alloc(ctx, n_eq, relation->nb_columns - 1);
+    ineq = isl_mat_alloc(ctx, n_ineq, relation->nb_columns - 1);
+
+    n_eq = n_ineq = 0;
+    for (i = 0; i < relation->nb_rows; ++i) {
+        isl_mat **m;
+        int row;
+
+        if (osl_int_zero(relation->precision, relation->m[i][0])) {
+            m = &eq;
+            row = n_eq++;
+        } else {
+            m = &ineq;
+            row = n_ineq++;
+        }
+
+        for (j = 0; j < relation->nb_columns - 1; ++j) {
+            int t = osl_int_get_si(relation->precision, relation->m[i][1 + j]);
+            isl_int_set_si(v, t);
+            *m = isl_mat_set_element(*m, row, j, v);
+        }
+    }
+
+    isl_int_clear(v);
+
+    bset = isl_basic_set_from_constraint_matrices(dim, eq, ineq,
+            isl_dim_set, isl_dim_div, isl_dim_param, isl_dim_cst);
+    return isl_set_from_basic_set(bset);
+}
+
+
+/** 
+ * Convert a osl_relation_p describing a union of domains
+ * to an isl_set.
+ */
+static __isl_give isl_set *osl_relation_list_to_isl_set(
+        osl_relation_p list, __isl_take isl_dim *dim)
+{
+    isl_set *set;
+
+    set = isl_set_empty(isl_dim_copy(dim));
+    for (; list; list = list->next) {
+        isl_set *set_i;
+        set_i = osl_relation_to_isl_set(list, isl_dim_copy(dim));
+        set = isl_set_union(set, set_i);
+    }
+
+    isl_dim_free(dim);
+    return set;
+}
+
+
+/** 
+ * Set the dimension names of type "type" according to the elements
+ * in the array "names".
+ */
+static __isl_give isl_dim *set_names(__isl_take isl_dim *dim,
+        enum isl_dim_type type, char **names)
+{
+    int i;
+    for (i = 0; i < isl_dim_size(dim, type); ++i)
+        dim = isl_dim_set_name(dim, type, i, names[i]);
+    return dim;
+}
+
+__isl_give isl_set * 
+spot_get_isl_stmt_domain(__isl_keep isl_ctx * ctx, osl_scop_p scop, osl_statement_p stm) { 
+	isl_set *context, *dom;
+	isl_space *param_space;
+	isl_dim *dim;
+	osl_strings_p scop_params = NULL;
+	
+	dim = isl_dim_set_alloc(ctx, scop->context->nb_parameters, 0);
+	if(scop->context->nb_parameters){
+		scop_params = (osl_strings_p)scop->parameters->data;
+		dim = set_names(dim, isl_dim_param, scop_params->string);
+	}
+	param_space = isl_space_params(isl_space_copy(dim));
+	context = osl_relation_to_isl_set(scop->context, param_space);
+	
+	int niter = osl_statement_get_nb_iterators(stm);
+	dim = isl_dim_set_alloc(ctx, scop->context->nb_parameters, niter);
+	
+	if(scop->context->nb_parameters){
+		scop_params = (osl_strings_p)scop->parameters->data;
+		dim = set_names(dim, isl_dim_param, scop_params->string);
+	} 
+	if(niter){
+		osl_body_p stmt_body = osl_statement_get_body(stm);//(osl_body_p)(stm->body->data);
+		dim = set_names(dim, isl_dim_set, stmt_body->iterators->string);
+	} 
+	dom = osl_relation_list_to_isl_set(stm->domain, isl_dim_copy(dim));
+	dom = isl_set_intersect_params(dom, isl_set_copy(context));
+	
+	// free stuff
+	isl_set_free(context);
+	
+	
+	return dom;
+}
+
+void spot_statement_apply_doi(osl_scop_p scop, osl_statement_p stm, osl_doi_p doi) {
+	isl_set *stmt_dom;
+	isl_ctx *ctx;
+	osl_doi_p di, dj;
+	
+	ctx = isl_ctx_alloc();		 
+	assert(ctx);
+
+	isl_options_set_on_error(ctx, ISL_ON_ERROR_ABORT);
+
+	SPOT_debug("Statement Domain in ISL:");
+	stmt_dom = spot_get_isl_stmt_domain(ctx, scop, stm);
+	isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_ISL);
+	isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_EXT_POLYLIB);
+	
+	if (stmt_dom == NULL) 
+		SPOT_error("Impossible to convert statement domain to isl");
+	
+	
+	for (di = doi; di != NULL; di = di->next) {
+		int nrep = 0;
+		if (di->user == NULL) 
+			di->user = isl_set_read_from_str(ctx, di->dom);	
+		
+		if (di->user == NULL) 
+			SPOT_error("Impossible to read isl domain");
+		
+		stmt_dom = isl_set_subtract(stmt_dom, isl_set_copy(di->user));
+	
+		// solve priority overlapping 
+		for (dj = doi; dj != NULL; dj = dj->next) {
+			if (dj->user == NULL) 
+				dj->user = isl_set_read_from_str(ctx, dj->dom);
+				
+			if (dj->user == NULL) 
+				SPOT_error("Impossible to read isl domain");
+				
+			if (di->priority < dj->priority) 
+				di->user = isl_set_subtract(di->user, isl_set_copy(dj->user));
+			else if (di->priority == dj->priority && nrep == 0)
+				nrep++; 
+			else if (di->priority == dj->priority) 
+				SPOT_error("More than one element with the same prority in the doi list"); 	
+		}
+		
+		SPOT_debug("Doi after computing overlapping:");
+		isl_set_print(di->user, stderr, 0, ISL_FORMAT_ISL); 
+		isl_set_print(di->user, stderr, 0, ISL_FORMAT_EXT_POLYLIB); 
+	}
+	
+	SPOT_debug("Statement Domain in ISL after computing overlapping:");	
+  isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_ISL);
+  isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_EXT_POLYLIB); 
+		  
+  // free isl_domains
+  for (di = doi; di != NULL; di = di->next)
+		isl_set_free(di->user);
+	isl_set_free(stmt_dom);
+	// isl_ctx_free(ctx);
+}
+
+
+void spot_scop_compute_domains(osl_scop_p scop) { 
+	osl_statement_p stm, newst, second; 
+	osl_doi_p doi; 
+	
+	SPOT_debug("before while!");
+	osl_scop_dump(stderr, scop);
+	
+	while (scop != NULL) {
+		
+		SPOT_debug("Computing ScOP!");
+		osl_scop_dump(stderr, scop);
+
+		// get doi extension 
+		doi = osl_generic_lookup(scop->extension, OSL_URI_DOI_LIST); 
+		 
+		if (doi == NULL) { 
+			SPOT_debug("Null Doi");
+			scop = scop->next; 
+			continue; 
+		}
+
+		SPOT_debug("Getting Statement");
+		// get the first statement
+		stm = scop->statement;
+		if (stm == NULL) { 
+			SPOT_debug("Null Statement");
+			scop = scop->next; 
+			continue; 
+		}
+		spot_statement_apply_doi(scop, stm, doi);
+		
+		scop = scop->next; 
+	}
+}
+
 int main(int argc, char* argv[]) {
   osl_scop_p scop;
   FILE* input;
@@ -92,7 +354,14 @@ int main(int argc, char* argv[]) {
     SPOT_error("cannot open input file");
 
   scop = spot_scop_read_from_c(input, argv[1]);
+     
+  SPOT_debug("CHECKLINE");
+  
+  
+  spot_scop_compute_domains(scop);
+  
   osl_scop_print(stdout, scop);
+  
   spot_scop_print_to_c(stdout, scop);
   osl_scop_free(scop);
   

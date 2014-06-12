@@ -42,7 +42,7 @@
 
 # define SPOT_VERSION                  "@PACKAGE_VERSION@"
 
-# define SPOT_DEBUG			0
+# define SPOT_DEBUG			1
 # define SPOT_TRUE			1
 # define SPOT_FALSE			0
 
