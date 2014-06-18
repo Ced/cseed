@@ -36,7 +36,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <osl/extensions/doi.h>
+//#include <osl/extensions/doi.h>
 #include <osl/osl.h>
 #include <clan/clan.h>
 #define CLOOG_INT_LONG
@@ -76,22 +76,6 @@ void spot_scop_print_to_c(FILE* output, osl_scop_p scop) {
   cloog_options_free(options);
   cloog_state_free(state); // the input is freed inside
 }
-
-/*
-char * spot_isl_set_sprint(isl_ctx * ctx, isl_set * set) { 
-	char *isl_set_str, *pr_str;
-	isl_printer *printer=NULL;
-	
-	printer=isl_printer_to_str(ctx);
-	isl_printer_set_output_format(printer , ISL_FORMAT_ISL);
-	isl_printer_print_set(printer, set);
-	pr_str = isl_printer_get_str(printer);
-  isl_set_str = osl_util_strdup(pr_str);
-	isl_printer_flush(printer);
-	
-	return isl_set_str;
-}
-*/
 
 osl_names_p get_scop_names(osl_scop_p scop){
 
@@ -234,107 +218,150 @@ spot_get_isl_stmt_domain(__isl_keep isl_ctx * ctx, osl_scop_p scop, osl_statemen
 	
 	// free stuff
 	isl_set_free(context);
-	
-	
 	return dom;
 }
 
-void spot_statement_apply_doi(osl_scop_p scop, osl_statement_p stm, osl_doi_p doi) {
+osl_relation_p spot_isl_to_osl_dom(isl_ctx * ctx, isl_set * set) 
+{
+	static isl_printer *p = NULL;
+	char *relstr; 
+	osl_relation_p rel;
+	
+	if (p == NULL) {
+		OSL_debug("creating printer");
+		p = isl_printer_to_str(ctx);
+		p = isl_printer_set_output_format(p, ISL_FORMAT_EXT_POLYLIB);
+	}
+	
+	p = isl_printer_print_set(p, set);
+	relstr = isl_printer_get_str(p);
+	p = isl_printer_flush(p); 
+	
+	//fprintf(stderr, relstr);
+	
+	rel = osl_relation_poly_sread(&relstr);
+	rel->type = OSL_TYPE_DOMAIN;
+	
+	return rel;
+}
+
+void spot_add_statement(osl_scop_p scop, isl_ctx * ctx, osl_doi_p doi) {
+	osl_statement_p tmp, dstmt;
+	osl_body_p extb;
+
+	// clone the original statement in order to create the new one
+	tmp = scop->statement->next;
+	scop->statement->next = NULL;
+	dstmt = osl_statement_clone(scop->statement); 
+	scop->statement->next = tmp;
+	// replace the original domain by new one
+	osl_relation_free(dstmt->domain);
+	dstmt->domain = spot_isl_to_osl_dom(ctx, doi->user);
+
+	extb = osl_generic_lookup(dstmt->extension, OSL_URI_BODY); 
+	if (extb != NULL) { 
+		osl_strings_free(extb->expression);
+		OSL_debug("Extended Body not NULL");
+	} else { 
+		OSL_debug("Extended Body NULL");
+	}
+	extb->expression = osl_strings_malloc();
+	osl_strings_add(extb->expression, doi->comp);
+	
+	osl_statement_add(&(scop->statement), dstmt);
+}
+
+void spot_compute_statements(osl_scop_p scop, osl_doi_p doi) {
 	isl_set *stmt_dom;
 	isl_ctx *ctx;
 	osl_doi_p di, dj;
+	osl_statement_p tmp; 
 	
 	ctx = isl_ctx_alloc();		 
 	assert(ctx);
-
 	isl_options_set_on_error(ctx, ISL_ON_ERROR_ABORT);
-
-	SPOT_debug("Statement Domain in ISL:");
-	stmt_dom = spot_get_isl_stmt_domain(ctx, scop, stm);
-	isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_ISL);
-	isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_EXT_POLYLIB);
 	
+	// get an isl set from the original domain
+	stmt_dom = spot_get_isl_stmt_domain(ctx, scop, scop->statement);	
 	if (stmt_dom == NULL) 
 		SPOT_error("Impossible to convert statement domain to isl");
 	
-	
+	// compute new domains and wrap them into statements
 	for (di = doi; di != NULL; di = di->next) {
-		int nrep = 0;
+		int pflag = 0;
+				
 		if (di->user == NULL) 
 			di->user = isl_set_read_from_str(ctx, di->dom);	
 		
 		if (di->user == NULL) 
 			SPOT_error("Impossible to read isl domain");
 		
+		// substract the set from the original domain
 		stmt_dom = isl_set_subtract(stmt_dom, isl_set_copy(di->user));
 	
-		// solve priority overlapping 
-		for (dj = doi; dj != NULL; dj = dj->next) {
-			if (dj->user == NULL) 
-				dj->user = isl_set_read_from_str(ctx, dj->dom);
-				
-			if (dj->user == NULL) 
-				SPOT_error("Impossible to read isl domain");
-				
-			if (di->priority < dj->priority) 
-				di->user = isl_set_subtract(di->user, isl_set_copy(dj->user));
-			else if (di->priority == dj->priority && nrep == 0)
-				nrep++; 
-			else if (di->priority == dj->priority) 
-				SPOT_error("More than one element with the same prority in the doi list"); 	
+		if (di->comp != NULL) {
+			// solve priority overlapping 
+			for (dj = doi; dj != NULL; dj = dj->next) {
+				if (dj->user == NULL) 
+					dj->user = isl_set_read_from_str(ctx, dj->dom);
+					
+				if (dj->user == NULL) 
+					SPOT_error("Impossible to read isl domain");
+					
+				if (di->priority < dj->priority) 
+					di->user = isl_set_subtract(di->user, isl_set_copy(dj->user));
+				else if (di->priority == dj->priority && pflag == 0)
+					pflag = 1; 
+				else if (di->priority == dj->priority) 
+					SPOT_error("More than one element with the same prority in the doi list"); 	
+			}
+			
+			if (isl_set_is_empty(di->user)) 
+				continue; 
+	
+			spot_add_statement(scop, ctx, di);		
 		}
-		
-		SPOT_debug("Doi after computing overlapping:");
-		isl_set_print(di->user, stderr, 0, ISL_FORMAT_ISL); 
-		isl_set_print(di->user, stderr, 0, ISL_FORMAT_EXT_POLYLIB); 
 	}
 	
-	SPOT_debug("Statement Domain in ISL after computing overlapping:");	
-  isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_ISL);
-  isl_set_print(stmt_dom, stderr, 0, ISL_FORMAT_EXT_POLYLIB); 
-		  
+	if (isl_set_is_empty(stmt_dom)) { 
+		tmp = scop->statement;
+		scop->statement = scop->statement->next;
+		tmp->next = NULL;
+		osl_statement_free(tmp); 
+	} else { 
+		osl_relation_free(scop->statement->domain); 
+		scop->statement->domain = spot_isl_to_osl_dom(ctx, stmt_dom);
+	} 
+	
   // free isl_domains
   for (di = doi; di != NULL; di = di->next)
 		isl_set_free(di->user);
 	isl_set_free(stmt_dom);
+	//isl_printer_free(p);
 	// isl_ctx_free(ctx);
 }
 
 
-void spot_scop_compute_domains(osl_scop_p scop) { 
-	osl_statement_p stm, newst, second; 
+void spot_compute_scops(osl_scop_p scop) { 
 	osl_doi_p doi; 
-	
-	SPOT_debug("before while!");
-	osl_scop_dump(stderr, scop);
-	
+
 	while (scop != NULL) {
-		
-		SPOT_debug("Computing ScOP!");
-		osl_scop_dump(stderr, scop);
-
 		// get doi extension 
-		doi = osl_generic_lookup(scop->extension, OSL_URI_DOI_LIST); 
-		 
-		if (doi == NULL) { 
-			SPOT_debug("Null Doi");
-			scop = scop->next; 
-			continue; 
-		}
+		doi = osl_generic_lookup(scop->extension, OSL_URI_DOI); 
+		
+		if (doi == NULL) {  scop = scop->next;  continue; }
 
-		SPOT_debug("Getting Statement");
-		// get the first statement
-		stm = scop->statement;
-		if (stm == NULL) { 
-			SPOT_debug("Null Statement");
-			scop = scop->next; 
+		if (scop->statement == NULL || scop->statement->next != NULL) { 
+			scop = scop->next;
 			continue; 
 		}
-		spot_statement_apply_doi(scop, stm, doi);
+		spot_compute_statements(scop, doi);
+		// once applyed, remove doi extension
+		osl_generic_remove(&(scop->extension), OSL_URI_DOI);
 		
 		scop = scop->next; 
 	}
-}
+} 
 
 int main(int argc, char* argv[]) {
   osl_scop_p scop;
@@ -354,15 +381,13 @@ int main(int argc, char* argv[]) {
     SPOT_error("cannot open input file");
 
   scop = spot_scop_read_from_c(input, argv[1]);
-     
-  SPOT_debug("CHECKLINE");
-  
-  
-  spot_scop_compute_domains(scop);
-  
+
+	spot_compute_scops(scop);
+ 
   osl_scop_print(stdout, scop);
-  
+ 
   spot_scop_print_to_c(stdout, scop);
+
   osl_scop_free(scop);
   
   fclose(input);
