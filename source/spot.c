@@ -61,20 +61,28 @@ void spot_scop_print_to_c(FILE* output, osl_scop_p scop) {
   CloogState* state;
   CloogOptions* options;
   CloogInput* input;
-  struct clast_stmt* clast;
-
+  CloogProgram* program ;
+  
   state = cloog_state_malloc();
   options = cloog_options_malloc(state);
   options->openscop = 1;
   cloog_options_copy_from_osl_scop(scop, options);
   input = cloog_input_from_osl_scop(options->state, scop);
-  clast = cloog_clast_create_from_input(input, options);
-  clast_pprint(output, clast, 0, options);
   
-  cloog_clast_free(clast);
-  options->scop = NULL; // don't free the scop
+  /* Reading the program informations. */
+  program = cloog_program_alloc(input->context, input->ud,options) ;
+  free(input) ;
+  
+  program = cloog_program_generate(program,options);
+  if (options->structure)
+		cloog_program_print(stdout,program);
+  cloog_program_pprint(output,program,options);
+  
+  cloog_program_free(program);
+  options->scop = NULL; // don't free the scop  
   cloog_options_free(options);
-  cloog_state_free(state); // the input is freed inside
+	cloog_state_free(state); // the input is freed inside
+  fclose(output); 
 }
 
 osl_names_p get_scop_names(osl_scop_p scop){
@@ -93,6 +101,8 @@ osl_names_p get_scop_names(osl_scop_p scop){
     osl_strings_free(names->arrays);
     names->arrays = osl_arrays_to_strings(arrays);
   }
+  
+	
 
   return names;
 }
@@ -382,9 +392,14 @@ int main(int argc, char* argv[]) {
 
   scop = spot_scop_read_from_c(input, argv[1]);
 
+	if (scop == NULL) { 
+		SPOT_info("Null SCOP, exiting..");
+		return 0;
+	}
+
 	spot_compute_scops(scop);
  
-  osl_scop_print(stdout, scop);
+  //osl_scop_print(stdout, scop);
  
   spot_scop_print_to_c(stdout, scop);
 
