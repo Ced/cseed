@@ -214,11 +214,11 @@ spot_get_isl_stmt_domain(__isl_keep isl_ctx * ctx, osl_scop_p scop, osl_statemen
 	
 	int niter = osl_statement_get_nb_iterators(stm);
 	dim = isl_dim_set_alloc(ctx, scop->context->nb_parameters, niter);
-	
+
 	if(scop->context->nb_parameters){
 		scop_params = (osl_strings_p)scop->parameters->data;
 		dim = set_names(dim, isl_dim_param, scop_params->string);
-	} 
+	}  
 	if(niter){
 		osl_body_p stmt_body = osl_statement_get_body(stm);//(osl_body_p)(stm->body->data);
 		dim = set_names(dim, isl_dim_set, stmt_body->iterators->string);
@@ -246,9 +246,7 @@ osl_relation_p spot_isl_to_osl_dom(isl_ctx * ctx, isl_set * set)
 	p = isl_printer_print_set(p, set);
 	relstr = isl_printer_get_str(p);
 	p = isl_printer_flush(p); 
-	
-	//fprintf(stderr, relstr);
-	
+		
 	rel = osl_relation_poly_sread(&relstr);
 	rel->type = OSL_TYPE_DOMAIN;
 	
@@ -284,9 +282,9 @@ void spot_add_statement(osl_scop_p scop, isl_ctx * ctx, osl_doi_p doi) {
 void spot_compute_statements(osl_scop_p scop, osl_doi_p doi) {
 	isl_set *stmt_dom;
 	isl_ctx *ctx;
+	isl_space *dsp;
 	osl_doi_p di, dj;
 	osl_statement_p tmp; 
-	
 	ctx = isl_ctx_alloc();		 
 	assert(ctx);
 	isl_options_set_on_error(ctx, ISL_ON_ERROR_ABORT);
@@ -295,14 +293,16 @@ void spot_compute_statements(osl_scop_p scop, osl_doi_p doi) {
 	stmt_dom = spot_get_isl_stmt_domain(ctx, scop, scop->statement);	
 	if (stmt_dom == NULL) 
 		SPOT_error("Impossible to convert statement domain to isl");
+	dsp = isl_set_get_space(stmt_dom);
 	
 	// compute new domains and wrap them into statements
 	for (di = doi; di != NULL; di = di->next) {
 		int pflag = 0;
 				
-		if (di->user == NULL) 
+		if (di->user == NULL) { 
 			di->user = isl_set_read_from_str(ctx, di->dom);	
-		
+			di->user = isl_set_align_params(di->user, isl_space_copy(dsp));
+		}
 		if (di->user == NULL) 
 			SPOT_error("Impossible to read isl domain");
 		
@@ -312,9 +312,13 @@ void spot_compute_statements(osl_scop_p scop, osl_doi_p doi) {
 		if (di->comp != NULL) {
 			// solve priority overlapping 
 			for (dj = doi; dj != NULL; dj = dj->next) {
-				if (dj->user == NULL) 
+				
+				if (dj->user == NULL) {
 					dj->user = isl_set_read_from_str(ctx, dj->dom);
-					
+					dj->user = isl_set_align_params(dj->user, isl_space_copy(dsp));
+				}
+				
+			
 				if (dj->user == NULL) 
 					SPOT_error("Impossible to read isl domain");
 					
@@ -343,12 +347,14 @@ void spot_compute_statements(osl_scop_p scop, osl_doi_p doi) {
 		scop->statement->domain = spot_isl_to_osl_dom(ctx, stmt_dom);
 	} 
 	
-  // free isl_domains
+  // free isl stuff
   for (di = doi; di != NULL; di = di->next)
 		isl_set_free(di->user);
 	isl_set_free(stmt_dom);
+	
+	// TODO: figure out how to properly free isl ctx without error
 	//isl_printer_free(p);
-	// isl_ctx_free(ctx);
+	//isl_ctx_free(ctx);
 }
 
 
@@ -366,7 +372,7 @@ void spot_compute_scops(osl_scop_p scop) {
 			continue; 
 		}
 		spot_compute_statements(scop, doi);
-		// once applyed, remove doi extension
+		// once applied, remove doi extension
 		osl_generic_remove(&(scop->extension), OSL_URI_DOI);
 		
 		scop = scop->next; 
@@ -391,19 +397,13 @@ int main(int argc, char* argv[]) {
     SPOT_error("cannot open input file");
 
   scop = spot_scop_read_from_c(input, argv[1]);
-
 	if (scop == NULL) { 
 		SPOT_info("Null SCOP, exiting..");
 		return 0;
 	}
-
 	spot_compute_scops(scop);
- 
-  //osl_scop_print(stdout, scop);
- 
-  spot_scop_print_to_c(stdout, scop);
-
-  osl_scop_free(scop);
+	spot_scop_print_to_c(stdout, scop);
+	osl_scop_free(scop);
   
   fclose(input);
   return 0;
