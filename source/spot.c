@@ -247,7 +247,7 @@ osl_relation_p spot_isl_to_osl_dom(isl_ctx * ctx, isl_set * set)
 	relstr = isl_printer_get_str(p);
 	p = isl_printer_flush(p); 
 		
-	rel = osl_relation_poly_sread(&relstr);
+	rel = osl_relation_sread_polylib(&relstr);
 	rel->type = OSL_TYPE_DOMAIN;
 	
 	return rel;
