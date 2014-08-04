@@ -378,33 +378,3 @@ void spot_compute_scops(osl_scop_p scop) {
 		scop = scop->next; 
 	}
 } 
-
-int main(int argc, char* argv[]) {
-  osl_scop_p scop;
-  FILE* input;
-
-  if ((argc < 2) || (argc > 2)) {
-    SPOT_info("usage: spot [file]");
-    exit(0);
-  }
-
-  if (argc == 1)
-    input = stdin;
-  else
-    input = fopen(argv[1], "r");
-
-  if (input == NULL)
-    SPOT_error("cannot open input file");
-
-  scop = spot_scop_read_from_c(input, argv[1]);
-	if (scop == NULL) { 
-		SPOT_info("Null SCOP, exiting..");
-		return 0;
-	}
-	spot_compute_scops(scop);
-	spot_scop_print_to_c(stdout, scop);
-	osl_scop_free(scop);
-  
-  fclose(input);
-  return 0;
-}

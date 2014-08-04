@@ -2,9 +2,9 @@
    /*--------------------------------------------------------------------+
     |                              Spot                                  |
     |--------------------------------------------------------------------|
-    |                             spot.h                                 |
+    |                             main.c                                 |
     |--------------------------------------------------------------------|
-    |                    First version: 28/05/2014                       |
+    |                    First version: 14/01/2014                       |
     +--------------------------------------------------------------------+
 
  +--------------------------------------------------------------------------+
@@ -34,25 +34,37 @@
  +--------------------------------------------------------------------------*/
 
 
-#ifndef SPOT_H
-# define SPOT_H
+#include <stdlib.h>
+#include <string.h>
+#include <osl/osl.h>
+#include <spot/spot.h>
 
-# include <stdlib.h>
-# include <spot/macros.h>
-# include <osl/osl.h>
-# include <isl/set.h>
-# include <isl/ctx.h>
+int main(int argc, char* argv[]) {
+  osl_scop_p scop;
+  FILE* input;
 
-osl_scop_p          spot_scop_read_from_c(FILE* input, char* input_name);
-void                spot_scop_print_to_c(FILE* output, osl_scop_p scop);
-osl_names_p         get_scop_names(osl_scop_p scop);
-__isl_give isl_set* spot_get_isl_stmt_domain(__isl_keep isl_ctx* ctx,
-                                             osl_scop_p scop,
-                                             osl_statement_p stm);
-osl_relation_p      spot_isl_to_osl_dom(isl_ctx* ctx, isl_set* set);
-void                spot_add_statement(osl_scop_p scop, isl_ctx* ctx,
-                                       osl_doi_p doi);
-void                spot_compute_statements(osl_scop_p scop, osl_doi_p doi);
-void                spot_compute_scops(osl_scop_p scop);
+  if ((argc < 2) || (argc > 2)) {
+    SPOT_info("usage: spot [file]");
+    exit(0);
+  }
 
-#endif /* define SPOT_H */
+  if (argc == 1)
+    input = stdin;
+  else
+    input = fopen(argv[1], "r");
+
+  if (input == NULL)
+    SPOT_error("cannot open input file");
+
+  scop = spot_scop_read_from_c(input, argv[1]);
+	if (scop == NULL) { 
+		SPOT_info("Null SCOP, exiting..");
+		return 0;
+	}
+	spot_compute_scops(scop);
+	spot_scop_print_to_c(stdout, scop);
+	osl_scop_free(scop);
+  
+  fclose(input);
+  return 0;
+}

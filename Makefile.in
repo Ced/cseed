@@ -133,14 +133,14 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(pkgincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libspot_la_DEPENDENCIES = $(ISL_LA) $(OSL_LA) $(CLAN_LA) $(CLOOG_LA)
-am_libspot_la_OBJECTS =
+am__dirstamp = $(am__leading_dot)dirstamp
+am_libspot_la_OBJECTS = source/libspot_la-spot.lo
 libspot_la_OBJECTS = $(am_libspot_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 PROGRAMS = $(bin_PROGRAMS)
-am__dirstamp = $(am__leading_dot)dirstamp
-am_spot_OBJECTS = source/spot-spot.$(OBJEXT)
+am_spot_OBJECTS = source/spot-main.$(OBJEXT)
 spot_OBJECTS = $(am_spot_OBJECTS)
 spot_LDADD = $(LDADD)
 depcomp = $(SHELL) $(top_srcdir)/autoconf/depcomp
@@ -381,7 +381,8 @@ lib_LTLIBRARIES = libspot.la
 
 #############################################################################
 pkginclude_HEADERS = \
-	include/spot/spot.h
+	include/spot/spot.h \
+	include/spot/macros.h
 
 DEFAULT_INCLUDES = -I.
 INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
@@ -390,13 +391,13 @@ AM_CFLAGS = $(CFLAGS_WARN)
 #############################################################################
 libspot_la_LIBADD = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ $(ISL_LA) $(OSL_LA) $(CLAN_LA) $(CLOOG_LA)
 libspot_la_CPPFLAGS = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
-libspot_la_SOURCES = 
+libspot_la_SOURCES = source/spot.c
 
 #############################################################################
 LDADD = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ libspot.la
 spot_CPPFLAGS = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
 spot_DEPENDENCIES = libspot.la
-spot_SOURCES = source/spot.c
+spot_SOURCES = source/main.c
 
 #############################################################################
 MAINTAINERCLEANFILES = \
@@ -476,6 +477,14 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+source/$(am__dirstamp):
+	@$(MKDIR_P) source
+	@: > source/$(am__dirstamp)
+source/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) source/$(DEPDIR)
+	@: > source/$(DEPDIR)/$(am__dirstamp)
+source/libspot_la-spot.lo: source/$(am__dirstamp) \
+	source/$(DEPDIR)/$(am__dirstamp)
 libspot.la: $(libspot_la_OBJECTS) $(libspot_la_DEPENDENCIES) $(EXTRA_libspot_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(libdir) $(libspot_la_OBJECTS) $(libspot_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
@@ -521,13 +530,7 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-source/$(am__dirstamp):
-	@$(MKDIR_P) source
-	@: > source/$(am__dirstamp)
-source/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) source/$(DEPDIR)
-	@: > source/$(DEPDIR)/$(am__dirstamp)
-source/spot-spot.$(OBJEXT): source/$(am__dirstamp) \
+source/spot-main.$(OBJEXT): source/$(am__dirstamp) \
 	source/$(DEPDIR)/$(am__dirstamp)
 spot$(EXEEXT): $(spot_OBJECTS) $(spot_DEPENDENCIES) $(EXTRA_spot_DEPENDENCIES) 
 	@rm -f spot$(EXEEXT)
@@ -535,12 +538,15 @@ spot$(EXEEXT): $(spot_OBJECTS) $(spot_DEPENDENCIES) $(EXTRA_spot_DEPENDENCIES)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f source/spot-spot.$(OBJEXT)
+	-rm -f source/libspot_la-spot.$(OBJEXT)
+	-rm -f source/libspot_la-spot.lo
+	-rm -f source/spot-main.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@source/$(DEPDIR)/spot-spot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@source/$(DEPDIR)/libspot_la-spot.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@source/$(DEPDIR)/spot-main.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -566,25 +572,33 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
-source/spot-spot.o: source/spot.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT source/spot-spot.o -MD -MP -MF source/$(DEPDIR)/spot-spot.Tpo -c -o source/spot-spot.o `test -f 'source/spot.c' || echo '$(srcdir)/'`source/spot.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) source/$(DEPDIR)/spot-spot.Tpo source/$(DEPDIR)/spot-spot.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='source/spot.c' object='source/spot-spot.o' libtool=no @AMDEPBACKSLASH@
+source/libspot_la-spot.lo: source/spot.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libspot_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT source/libspot_la-spot.lo -MD -MP -MF source/$(DEPDIR)/libspot_la-spot.Tpo -c -o source/libspot_la-spot.lo `test -f 'source/spot.c' || echo '$(srcdir)/'`source/spot.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) source/$(DEPDIR)/libspot_la-spot.Tpo source/$(DEPDIR)/libspot_la-spot.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='source/spot.c' object='source/libspot_la-spot.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o source/spot-spot.o `test -f 'source/spot.c' || echo '$(srcdir)/'`source/spot.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libspot_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o source/libspot_la-spot.lo `test -f 'source/spot.c' || echo '$(srcdir)/'`source/spot.c
 
-source/spot-spot.obj: source/spot.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT source/spot-spot.obj -MD -MP -MF source/$(DEPDIR)/spot-spot.Tpo -c -o source/spot-spot.obj `if test -f 'source/spot.c'; then $(CYGPATH_W) 'source/spot.c'; else $(CYGPATH_W) '$(srcdir)/source/spot.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) source/$(DEPDIR)/spot-spot.Tpo source/$(DEPDIR)/spot-spot.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='source/spot.c' object='source/spot-spot.obj' libtool=no @AMDEPBACKSLASH@
+source/spot-main.o: source/main.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT source/spot-main.o -MD -MP -MF source/$(DEPDIR)/spot-main.Tpo -c -o source/spot-main.o `test -f 'source/main.c' || echo '$(srcdir)/'`source/main.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) source/$(DEPDIR)/spot-main.Tpo source/$(DEPDIR)/spot-main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='source/main.c' object='source/spot-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o source/spot-spot.obj `if test -f 'source/spot.c'; then $(CYGPATH_W) 'source/spot.c'; else $(CYGPATH_W) '$(srcdir)/source/spot.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o source/spot-main.o `test -f 'source/main.c' || echo '$(srcdir)/'`source/main.c
+
+source/spot-main.obj: source/main.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT source/spot-main.obj -MD -MP -MF source/$(DEPDIR)/spot-main.Tpo -c -o source/spot-main.obj `if test -f 'source/main.c'; then $(CYGPATH_W) 'source/main.c'; else $(CYGPATH_W) '$(srcdir)/source/main.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) source/$(DEPDIR)/spot-main.Tpo source/$(DEPDIR)/spot-main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='source/main.c' object='source/spot-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(spot_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o source/spot-main.obj `if test -f 'source/main.c'; then $(CYGPATH_W) 'source/main.c'; else $(CYGPATH_W) '$(srcdir)/source/main.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf source/.libs source/_libs
 
 distclean-libtool:
 	-rm -f libtool config.lt

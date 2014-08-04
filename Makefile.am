@@ -70,7 +70,8 @@ lib_LTLIBRARIES = libspot.la
 #############################################################################
 
 pkginclude_HEADERS = \
-	include/spot/spot.h
+	include/spot/spot.h \
+	include/spot/macros.h
 
 DEFAULT_INCLUDES = -I.
 INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
@@ -80,14 +81,14 @@ AM_CFLAGS = $(CFLAGS_WARN)
 
 libspot_la_LIBADD   = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ $(ISL_LA) $(OSL_LA) $(CLAN_LA) $(CLOOG_LA)
 libspot_la_CPPFLAGS = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
-libspot_la_SOURCES  =
+libspot_la_SOURCES  = source/spot.c
 
 #############################################################################
 
-LDADD              = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ libspot.la
+LDADD             = @ISL_LIBS@ @OSL_LIBS@ @CLAN_LIBS@ @CLOOG_LIBS@ libspot.la
 spot_CPPFLAGS     = @ISL_CPPFLAGS@ @OSL_CPPFLAGS@ @CLAN_CPPFLAGS@ @CLOOG_CPPFLAGS@
 spot_DEPENDENCIES = libspot.la
-spot_SOURCES      = source/spot.c
+spot_SOURCES      = source/main.c
 
 #############################################################################
 
